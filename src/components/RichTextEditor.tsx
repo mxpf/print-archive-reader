@@ -191,7 +191,7 @@ export function RichTextEditor({ html, onChange, onSave }: Props) {
     const number = getNextTargetNumber(editorRef.current?.innerHTML ?? '')
     const selectedHtml = getSelectedHtml()
     insertHtml(
-      `<aside class="page-footnotes" role="doc-footnotes"><ol><li id="fn-${number}">${
+      `<aside class="page-footnotes" role="doc-footnotes"><ol><li id="fn-${number}" value="${number}">${
         selectedHtml || 'Footnote text'
       } <a class="footnote-backref" href="#fnref-${number}">Back</a></li></ol></aside>`,
     )
@@ -209,7 +209,7 @@ export function RichTextEditor({ html, onChange, onSave }: Props) {
     const number = getNextTargetNumber(editorRef.current?.innerHTML ?? '')
     const selectedHtml = getSelectedHtml()
     insertHtml(
-      `<ol class="endnotes"><li id="fn-${number}">${selectedHtml || 'Endnote text'} <a class="footnote-backref" href="#fnref-${number}">Back</a></li></ol>`,
+      `<ol class="endnotes"><li id="fn-${number}" value="${number}">${selectedHtml || 'Endnote text'} <a class="footnote-backref" href="#fnref-${number}">Back</a></li></ol>`,
     )
   }
 

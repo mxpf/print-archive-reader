@@ -33,8 +33,9 @@ export function ReaderView({ book, theme, onThemeToggle, onBack, onUpdateBook }:
   const measureRef = useRef<HTMLDivElement | null>(null)
 
   const activeChapter = book.chapters.find((chapter) => chapter.id === activeChapterId) ?? book.chapters[0]
-  const fallbackPages = useMemo(() => splitIntoReaderPages(activeChapter?.contentHtml ?? ''), [activeChapter?.contentHtml])
-  const contentBlocks = useMemo(() => htmlToReaderBlocks(activeChapter?.contentHtml ?? ''), [activeChapter?.contentHtml])
+  const normalizedContent = useMemo(() => normalizeFootnoteTargets(activeChapter?.contentHtml ?? ''), [activeChapter?.contentHtml])
+  const fallbackPages = useMemo(() => splitIntoReaderPages(normalizedContent), [normalizedContent])
+  const contentBlocks = useMemo(() => htmlToReaderBlocks(normalizedContent), [normalizedContent])
   const pages = viewMode === 'page' && measuredPages.length > 0 ? measuredPages : fallbackPages
   const progress = viewMode === 'scroll' ? Math.round(scrollRatio * 100) : pages.length > 0 ? Math.round(((pageIndex + 1) / pages.length) * 100) : 0
 
@@ -255,7 +256,7 @@ export function ReaderView({ book, theme, onThemeToggle, onBack, onUpdateBook }:
             className="reader-content mx-auto max-w-[72ch] px-5 pb-[calc(6.5rem+env(safe-area-inset-bottom))] pt-10 leading-[1.78] text-stone-900 dark:text-stone-100 sm:px-8 sm:pb-10"
             style={{ fontSize, textAlign: justified ? 'justify' : 'left' }}
             onBlur={() => persist(activeChapterId, pageIndex, scrollRatio)}
-            dangerouslySetInnerHTML={{ __html: activeChapter?.contentHtml ?? '' }}
+            dangerouslySetInnerHTML={{ __html: normalizedContent }}
           />
           <SourceReferencePanel pages={book.sourcePages} />
         </>
@@ -535,6 +536,21 @@ function SourceReferencePanel({ pages }: { pages: SourcePage[] }) {
       </div>
     </aside>
   )
+}
+
+function normalizeFootnoteTargets(html: string) {
+  if (!html || typeof document === 'undefined') return html
+
+  const template = document.createElement('template')
+  template.innerHTML = html
+
+  template.content.querySelectorAll('li[id^="fn-"]').forEach((item) => {
+    if (item.hasAttribute('value')) return
+    const match = item.id.match(/^fn-(\d+)$/)
+    if (match) item.setAttribute('value', match[1])
+  })
+
+  return template.innerHTML
 }
 
 function htmlToReaderBlocks(html: string) {

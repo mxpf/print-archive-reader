@@ -150,10 +150,25 @@ textarea {
   text-transform: uppercase;
 }
 
+.footnotes,
 .page-footnotes ol,
 .endnotes {
   list-style: decimal;
   padding-left: 1.35rem;
+}
+
+.footnotes li,
+.page-footnotes li,
+.endnotes li {
+  padding-left: 0.25rem;
+}
+
+.footnotes li::marker,
+.page-footnotes li::marker,
+.endnotes li::marker {
+  font-family: var(--font-archive-sans);
+  font-size: 0.78em;
+  font-weight: 700;
 }
 
 .footnote-backref {
