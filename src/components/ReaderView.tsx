@@ -1,4 +1,4 @@
-import { ChevronLeft, ChevronRight, Minus, Plus, X } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Home, Minus, Plus, SlidersHorizontal, X } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { ReactNode } from 'react'
 import { ReaderToolbar } from './ReaderToolbar'
@@ -109,8 +109,8 @@ export function ReaderView({ book, theme, onThemeToggle, onBack, onUpdateBook }:
     <main
       className={
         theme === 'dark'
-          ? 'min-h-screen bg-stone-950 text-stone-50 [--reader-toolbar-height:57px] sm:[--reader-toolbar-height:69px]'
-          : 'min-h-screen bg-[#f7f1e7] text-stone-950 [--reader-toolbar-height:57px] sm:[--reader-toolbar-height:69px]'
+          ? 'min-h-screen bg-stone-950 text-stone-50 [--reader-toolbar-height:0px] sm:[--reader-toolbar-height:69px]'
+          : 'min-h-screen bg-[#f7f1e7] text-stone-950 [--reader-toolbar-height:0px] sm:[--reader-toolbar-height:69px]'
       }
     >
       <ReaderToolbar
@@ -129,12 +129,16 @@ export function ReaderView({ book, theme, onThemeToggle, onBack, onUpdateBook }:
         onViewModeChange={changeViewMode}
         onPrevPage={() => setPage(pageIndex - 1)}
         onNextPage={() => setPage(pageIndex + 1)}
-        onOpenControls={() => setControlsOpen(true)}
       />
 
       <div className="fixed inset-x-0 top-[var(--reader-toolbar-height)] z-10 h-1 bg-stone-200 dark:bg-stone-800">
         <div className="h-full bg-stone-900 transition-all dark:bg-stone-200" style={{ width: `${progress}%` }} />
       </div>
+
+      <MobileFloatingReaderButtons
+        onBack={onBack}
+        onOpenControls={() => setControlsOpen(true)}
+      />
 
       <MobileReaderControls
         open={controlsOpen}
@@ -160,7 +164,7 @@ export function ReaderView({ book, theme, onThemeToggle, onBack, onUpdateBook }:
       {viewMode === 'scroll' ? (
         <>
           <article
-            className="reader-content mx-auto max-w-[72ch] px-5 py-10 leading-[1.78] text-stone-900 dark:text-stone-100 sm:px-8"
+            className="reader-content mx-auto max-w-[72ch] px-5 pb-[calc(6.5rem+env(safe-area-inset-bottom))] pt-10 leading-[1.78] text-stone-900 dark:text-stone-100 sm:px-8 sm:pb-10"
             style={{ fontSize }}
             onBlur={() => persist(activeChapterId, pageIndex, scrollRatio)}
             dangerouslySetInnerHTML={{ __html: activeChapter?.contentHtml ?? '' }}
@@ -169,7 +173,7 @@ export function ReaderView({ book, theme, onThemeToggle, onBack, onUpdateBook }:
         </>
       ) : (
         <>
-          <section className="mx-auto grid h-[calc(100svh-var(--reader-toolbar-height)-4px)] max-w-5xl grid-rows-[minmax(0,1fr)_auto] px-4 pb-4 pt-4 sm:px-8 sm:pb-5 sm:pt-5">
+          <section className="mx-auto grid h-[calc(100svh-var(--reader-toolbar-height)-4px)] max-w-5xl grid-rows-[minmax(0,1fr)_auto] px-4 pb-[calc(5.75rem+env(safe-area-inset-bottom))] pt-4 sm:px-8 sm:pb-5 sm:pt-5">
             <article
               className="reader-content min-h-0 overflow-y-auto rounded-lg border border-stone-200 bg-[#fffaf1] px-6 py-7 leading-[1.72] shadow-sm [scrollbar-gutter:stable] dark:border-stone-800 dark:bg-stone-900 sm:px-10 sm:py-9"
               style={{ fontSize }}
@@ -203,6 +207,37 @@ export function ReaderView({ book, theme, onThemeToggle, onBack, onUpdateBook }:
         </>
       )}
     </main>
+  )
+}
+
+function MobileFloatingReaderButtons({
+  onBack,
+  onOpenControls,
+}: {
+  onBack: () => void
+  onOpenControls: () => void
+}) {
+  return (
+    <div className="fixed inset-x-0 bottom-[calc(1rem+env(safe-area-inset-bottom))] z-30 flex items-center justify-between px-4 sm:hidden">
+      <button
+        type="button"
+        onClick={onBack}
+        className="inline-flex h-14 w-14 items-center justify-center rounded-full border border-stone-300/70 bg-[#fbf5ea]/88 text-stone-900 shadow-lg backdrop-blur-md transition hover:bg-[#fbf5ea] dark:border-stone-700 dark:bg-stone-900/88 dark:text-stone-100"
+        aria-label="Back to library"
+        title="Back to library"
+      >
+        <Home size={23} />
+      </button>
+      <button
+        type="button"
+        onClick={onOpenControls}
+        className="inline-flex h-14 w-14 items-center justify-center rounded-full border border-stone-300/70 bg-[#fbf5ea]/88 text-stone-900 shadow-lg backdrop-blur-md transition hover:bg-[#fbf5ea] dark:border-stone-700 dark:bg-stone-900/88 dark:text-stone-100"
+        aria-label="Open reading controls"
+        title="Open reading controls"
+      >
+        <SlidersHorizontal size={23} />
+      </button>
+    </div>
   )
 }
 
