@@ -97,9 +97,15 @@ Books are stored locally in IndexedDB through `src/services/storage.ts`. Initial
 
 ## GitHub Pages
 
-The project includes `.github/workflows/deploy.yml`, which deploys `dist/` to GitHub Pages on pushes to `main`.
-
 Local builds use `/` as the Vite base path. GitHub Pages builds set `GITHUB_PAGES=true`, which switches the base path to `/print-archive-reader/`.
+
+This repo is published to Pages from the `gh-pages` branch. To refresh the static build:
+
+```bash
+GITHUB_PAGES=true npm run build
+```
+
+Then publish the contents of `dist/` to the `gh-pages` branch.
 
 ## Folder Structure
 
