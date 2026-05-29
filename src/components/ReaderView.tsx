@@ -1,5 +1,5 @@
 import { ChevronLeft, ChevronRight, Home, Minus, Plus, SlidersHorizontal, X } from 'lucide-react'
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import type { ReactNode, TouchEvent } from 'react'
 import { ReaderToolbar } from './ReaderToolbar'
 import { ThemeToggle } from './ThemeToggle'
@@ -23,12 +23,18 @@ export function ReaderView({ book, theme, onThemeToggle, onBack, onUpdateBook }:
   const [pageIndex, setPageIndex] = useState(book.lastReadPosition?.pageIndex ?? 0)
   const [scrollRatio, setScrollRatio] = useState(book.lastReadPosition?.scrollRatio ?? 0)
   const [controlsOpen, setControlsOpen] = useState(false)
+  const [measuredPages, setMeasuredPages] = useState<string[]>([])
+  const [pageMeasureKey, setPageMeasureKey] = useState(0)
   const restoreKeyRef = useRef('')
   const scrollTimerRef = useRef<number | null>(null)
   const swipeStartRef = useRef<{ x: number; y: number; time: number } | null>(null)
+  const pageArticleRef = useRef<HTMLElement | null>(null)
+  const measureRef = useRef<HTMLDivElement | null>(null)
 
   const activeChapter = book.chapters.find((chapter) => chapter.id === activeChapterId) ?? book.chapters[0]
-  const pages = useMemo(() => splitIntoReaderPages(activeChapter?.contentHtml ?? ''), [activeChapter?.contentHtml])
+  const fallbackPages = useMemo(() => splitIntoReaderPages(activeChapter?.contentHtml ?? ''), [activeChapter?.contentHtml])
+  const contentBlocks = useMemo(() => htmlToReaderBlocks(activeChapter?.contentHtml ?? ''), [activeChapter?.contentHtml])
+  const pages = viewMode === 'page' && measuredPages.length > 0 ? measuredPages : fallbackPages
   const progress = viewMode === 'scroll' ? Math.round(scrollRatio * 100) : pages.length > 0 ? Math.round(((pageIndex + 1) / pages.length) * 100) : 0
 
   const persist = useCallback((chapterId: string, nextPageIndex: number, nextScrollRatio = scrollRatio) => {
@@ -124,6 +130,56 @@ export function ReaderView({ book, theme, onThemeToggle, onBack, onUpdateBook }:
   }, [activeChapterId, pageIndex, persist, viewMode])
 
   useEffect(() => {
+    if (viewMode !== 'page' || !pageArticleRef.current) return
+    const observer = new ResizeObserver(() => {
+      setPageMeasureKey((key) => key + 1)
+    })
+    observer.observe(pageArticleRef.current)
+    return () => observer.disconnect()
+  }, [viewMode])
+
+  useLayoutEffect(() => {
+    if (viewMode !== 'page') return
+
+    const pageElement = pageArticleRef.current
+    const measureElement = measureRef.current
+    if (!pageElement || !measureElement || contentBlocks.length === 0) return
+
+    const maxHeight = pageElement.clientHeight
+    if (maxHeight <= 0) return
+
+    measureElement.style.width = `${pageElement.clientWidth}px`
+    measureElement.style.fontSize = `${fontSize}px`
+    measureElement.innerHTML = ''
+
+    const nextPages: string[] = []
+    let currentBlocks: string[] = []
+
+    for (const block of contentBlocks) {
+      const candidateBlocks = [...currentBlocks, block]
+      measureElement.innerHTML = candidateBlocks.join('')
+      const fits = measureElement.scrollHeight <= maxHeight
+
+      if (fits || currentBlocks.length === 0) {
+        currentBlocks = candidateBlocks
+      } else {
+        nextPages.push(currentBlocks.join(''))
+        currentBlocks = [block]
+      }
+    }
+
+    if (currentBlocks.length > 0) nextPages.push(currentBlocks.join(''))
+
+    const paginated = nextPages.length > 0 ? nextPages : fallbackPages
+    const frame = window.requestAnimationFrame(() => {
+      setMeasuredPages(paginated)
+      setPageIndex((index) => Math.min(index, Math.max(0, paginated.length - 1)))
+    })
+
+    return () => window.cancelAnimationFrame(frame)
+  }, [contentBlocks, fallbackPages, fontSize, pageMeasureKey, viewMode])
+
+  useEffect(() => {
     if (!controlsOpen) return
     const previousOverflow = document.body.style.overflow
     document.body.style.overflow = 'hidden'
@@ -209,9 +265,15 @@ export function ReaderView({ book, theme, onThemeToggle, onBack, onUpdateBook }:
             }}
           >
             <article
-              className="reader-content min-h-0 overflow-y-auto rounded-lg border border-stone-200 bg-[#fffaf1] px-6 py-7 leading-[1.72] shadow-sm [scrollbar-gutter:stable] dark:border-stone-800 dark:bg-stone-900 sm:px-10 sm:py-9"
+              ref={pageArticleRef}
+              className="reader-content min-h-0 overflow-hidden rounded-lg border border-stone-200 bg-[#fffaf1] px-6 py-7 leading-[1.72] shadow-sm dark:border-stone-800 dark:bg-stone-900 sm:px-10 sm:py-9"
               style={{ fontSize }}
               dangerouslySetInnerHTML={{ __html: pages[pageIndex] ?? '' }}
+            />
+            <div
+              ref={measureRef}
+              aria-hidden="true"
+              className="reader-content pointer-events-none fixed -left-[9999px] top-0 invisible rounded-lg border border-transparent px-6 py-7 leading-[1.72] sm:px-10 sm:py-9"
             />
             <nav className="mt-4 hidden grid-cols-[1fr_auto_1fr] items-center gap-2 sm:grid">
               <button
@@ -237,7 +299,9 @@ export function ReaderView({ book, theme, onThemeToggle, onBack, onUpdateBook }:
               </button>
             </nav>
           </section>
-          <SourceReferencePanel pages={book.sourcePages} />
+          <div className="hidden sm:block">
+            <SourceReferencePanel pages={book.sourcePages} />
+          </div>
         </>
       )}
     </main>
@@ -449,6 +513,28 @@ function SourceReferencePanel({ pages }: { pages: SourcePage[] }) {
   )
 }
 
+function htmlToReaderBlocks(html: string) {
+  if (typeof document === 'undefined') return html ? [html] : []
+
+  const template = document.createElement('template')
+  template.innerHTML = html
+
+  return Array.from(template.content.childNodes)
+    .map((node) => {
+      if (node.nodeType === 3) {
+        const text = node.textContent?.trim()
+        return text ? `<p>${escapeHtml(text)}</p>` : ''
+      }
+
+      if (node instanceof HTMLElement) {
+        return node.outerHTML
+      }
+
+      return ''
+    })
+    .filter(Boolean)
+}
+
 function splitIntoReaderPages(html: string) {
   const chunks = html.split(/<hr[^>]*>/g).filter(Boolean)
   if (chunks.length > 1) return chunks
@@ -458,4 +544,13 @@ function splitIntoReaderPages(html: string) {
     pages.push(paragraphs.slice(index, index + 3).map((part) => `${part}</p>`).join(''))
   }
   return pages.length ? pages : [html]
+}
+
+function escapeHtml(value: string) {
+  return value
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    .replaceAll("'", '&#039;')
 }
