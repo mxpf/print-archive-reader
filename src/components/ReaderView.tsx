@@ -1,6 +1,6 @@
 import { ChevronLeft, ChevronRight, Home, Minus, Plus, SlidersHorizontal, X } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import type { ReactNode } from 'react'
+import type { ReactNode, TouchEvent } from 'react'
 import { ReaderToolbar } from './ReaderToolbar'
 import { ThemeToggle } from './ThemeToggle'
 import { ViewModeToggle } from './ViewModeToggle'
@@ -25,6 +25,7 @@ export function ReaderView({ book, theme, onThemeToggle, onBack, onUpdateBook }:
   const [controlsOpen, setControlsOpen] = useState(false)
   const restoreKeyRef = useRef('')
   const scrollTimerRef = useRef<number | null>(null)
+  const swipeStartRef = useRef<{ x: number; y: number; time: number } | null>(null)
 
   const activeChapter = book.chapters.find((chapter) => chapter.id === activeChapterId) ?? book.chapters[0]
   const pages = useMemo(() => splitIntoReaderPages(activeChapter?.contentHtml ?? ''), [activeChapter?.contentHtml])
@@ -62,6 +63,32 @@ export function ReaderView({ book, theme, onThemeToggle, onBack, onUpdateBook }:
     setPageIndex(0)
     setScrollRatio(0)
     setControlsOpen(false)
+  }
+
+  const handlePageTouchStart = (event: TouchEvent<HTMLElement>) => {
+    if (viewMode !== 'page' || controlsOpen) return
+    const touch = event.changedTouches[0]
+    swipeStartRef.current = {
+      x: touch.clientX,
+      y: touch.clientY,
+      time: Date.now(),
+    }
+  }
+
+  const handlePageTouchEnd = (event: TouchEvent<HTMLElement>) => {
+    const start = swipeStartRef.current
+    swipeStartRef.current = null
+    if (!start || viewMode !== 'page' || controlsOpen) return
+
+    const touch = event.changedTouches[0]
+    const deltaX = touch.clientX - start.x
+    const deltaY = touch.clientY - start.y
+    const elapsed = Date.now() - start.time
+    const horizontalDistance = Math.abs(deltaX)
+    const verticalDistance = Math.abs(deltaY)
+
+    if (elapsed > 900 || horizontalDistance < 56 || horizontalDistance < verticalDistance * 1.25) return
+    setPage(deltaX < 0 ? pageIndex + 1 : pageIndex - 1)
   }
 
   useEffect(() => {
@@ -173,7 +200,14 @@ export function ReaderView({ book, theme, onThemeToggle, onBack, onUpdateBook }:
         </>
       ) : (
         <>
-          <section className="mx-auto grid h-[calc(100svh-var(--reader-toolbar-height)-4px)] max-w-5xl grid-rows-[minmax(0,1fr)_auto] px-4 pb-[calc(5.75rem+env(safe-area-inset-bottom))] pt-4 sm:px-8 sm:pb-5 sm:pt-5">
+          <section
+            className="mx-auto grid h-[calc(100svh-var(--reader-toolbar-height)-4px)] max-w-5xl grid-rows-[minmax(0,1fr)_auto] px-4 pb-[calc(5.75rem+env(safe-area-inset-bottom))] pt-4 [touch-action:pan-y] sm:px-8 sm:pb-5 sm:pt-5"
+            onTouchStart={handlePageTouchStart}
+            onTouchEnd={handlePageTouchEnd}
+            onTouchCancel={() => {
+              swipeStartRef.current = null
+            }}
+          >
             <article
               className="reader-content min-h-0 overflow-y-auto rounded-lg border border-stone-200 bg-[#fffaf1] px-6 py-7 leading-[1.72] shadow-sm [scrollbar-gutter:stable] dark:border-stone-800 dark:bg-stone-900 sm:px-10 sm:py-9"
               style={{ fontSize }}
