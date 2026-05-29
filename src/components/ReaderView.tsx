@@ -130,37 +130,39 @@ export function ReaderView({ book, theme, onThemeToggle, onBack, onUpdateBook }:
           <SourceReferencePanel pages={book.sourcePages} />
         </>
       ) : (
-        <section className="mx-auto flex min-h-[calc(100vh-74px)] max-w-5xl flex-col px-4 py-6 sm:px-8">
-          <article
-            className="reader-content flex-1 rounded-lg border border-stone-200 bg-[#fffaf1] px-6 py-8 leading-[1.75] shadow-sm dark:border-stone-800 dark:bg-stone-900 sm:px-10"
-            style={{ fontSize }}
-            dangerouslySetInnerHTML={{ __html: pages[pageIndex] ?? '' }}
-          />
-          <nav className="mt-4 grid grid-cols-[1fr_auto_1fr] items-center gap-2">
-            <button
-              type="button"
-              onClick={() => setPage(pageIndex - 1)}
-              disabled={pageIndex === 0}
-              className="inline-flex h-12 items-center justify-center gap-2 rounded-full border border-stone-300 px-4 text-sm font-medium disabled:opacity-35 dark:border-stone-700"
-            >
-              <ChevronLeft size={18} />
-              Previous
-            </button>
-            <span className="text-sm text-stone-500 dark:text-stone-400">
-              {pageIndex + 1} / {pages.length}
-            </span>
-            <button
-              type="button"
-              onClick={() => setPage(pageIndex + 1)}
-              disabled={pageIndex === pages.length - 1}
-              className="inline-flex h-12 items-center justify-center gap-2 rounded-full border border-stone-300 px-4 text-sm font-medium disabled:opacity-35 dark:border-stone-700"
-            >
-              Next
-              <ChevronRight size={18} />
-            </button>
-          </nav>
+        <>
+          <section className="mx-auto grid h-[calc(100svh-74px)] max-w-5xl grid-rows-[minmax(0,1fr)_auto] px-4 pb-4 pt-5 sm:px-8 sm:pb-5">
+            <article
+              className="reader-content min-h-0 overflow-y-auto rounded-lg border border-stone-200 bg-[#fffaf1] px-6 py-7 leading-[1.72] shadow-sm [scrollbar-gutter:stable] dark:border-stone-800 dark:bg-stone-900 sm:px-10 sm:py-9"
+              style={{ fontSize }}
+              dangerouslySetInnerHTML={{ __html: pages[pageIndex] ?? '' }}
+            />
+            <nav className="mt-3 grid grid-cols-[1fr_auto_1fr] items-center gap-2 sm:mt-4">
+              <button
+                type="button"
+                onClick={() => setPage(pageIndex - 1)}
+                disabled={pageIndex === 0}
+                className="inline-flex h-11 items-center justify-center gap-2 rounded-full border border-stone-300 px-4 text-sm font-medium disabled:opacity-35 dark:border-stone-700 sm:h-12"
+              >
+                <ChevronLeft size={18} />
+                Previous
+              </button>
+              <span className="text-sm text-stone-500 dark:text-stone-400">
+                {pageIndex + 1} / {pages.length}
+              </span>
+              <button
+                type="button"
+                onClick={() => setPage(pageIndex + 1)}
+                disabled={pageIndex === pages.length - 1}
+                className="inline-flex h-11 items-center justify-center gap-2 rounded-full border border-stone-300 px-4 text-sm font-medium disabled:opacity-35 dark:border-stone-700 sm:h-12"
+              >
+                Next
+                <ChevronRight size={18} />
+              </button>
+            </nav>
+          </section>
           <SourceReferencePanel pages={book.sourcePages} />
-        </section>
+        </>
       )}
     </main>
   )
