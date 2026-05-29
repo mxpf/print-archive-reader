@@ -1,4 +1,4 @@
-import { Check, ChevronLeft, ChevronRight, Home, Minus, Plus, Share2, SlidersHorizontal, X } from 'lucide-react'
+import { Check, ChevronLeft, ChevronRight, Home, Link2, Minus, Plus, Share2, SlidersHorizontal, X } from 'lucide-react'
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import type { ReactNode, TouchEvent } from 'react'
 import { ReaderToolbar } from './ReaderToolbar'
@@ -26,7 +26,7 @@ export function ReaderView({ book, sharedHighlight, theme, onThemeToggle, onBack
   const [scrollRatio, setScrollRatio] = useState(book.lastReadPosition?.scrollRatio ?? 0)
   const [controlsOpen, setControlsOpen] = useState(false)
   const [selectedPassage, setSelectedPassage] = useState<string | null>(null)
-  const [shareStatus, setShareStatus] = useState<'idle' | 'copied'>('idle')
+  const [shareStatus, setShareStatus] = useState<'idle' | 'copied' | 'link-copied'>('idle')
   const [measuredPages, setMeasuredPages] = useState<string[]>([])
   const [pageMeasureKey, setPageMeasureKey] = useState(0)
   const restoreKeyRef = useRef('')
@@ -104,11 +104,11 @@ export function ReaderView({ book, sharedHighlight, theme, onThemeToggle, onBack
   const shareSelectedPassage = async () => {
     if (!selectedPassage) return
     const url = makeHighlightUrl(book.id, activeChapterId, selectedPassage)
-    const text = `${book.title}, ${book.author}\n\n"${selectedPassage}"\n\n${url}`
+    const text = `${book.title}, ${book.author}\n\n"${selectedPassage}"\n\nRead this passage:\n${url}`
 
     if (navigator.share) {
       try {
-        await navigator.share({ title: book.title, text: `"${selectedPassage}"`, url })
+        await navigator.share({ title: `${book.title} passage`, text })
         setShareStatus('copied')
         return
       } catch {
@@ -118,6 +118,12 @@ export function ReaderView({ book, sharedHighlight, theme, onThemeToggle, onBack
 
     await navigator.clipboard.writeText(text)
     setShareStatus('copied')
+  }
+
+  const copySelectedPassageLink = async () => {
+    if (!selectedPassage) return
+    await navigator.clipboard.writeText(makeHighlightUrl(book.id, activeChapterId, selectedPassage))
+    setShareStatus('link-copied')
   }
 
   const handlePageTouchStart = (event: TouchEvent<HTMLElement>) => {
@@ -323,6 +329,7 @@ export function ReaderView({ book, sharedHighlight, theme, onThemeToggle, onBack
         passage={selectedPassage}
         status={shareStatus}
         onShare={shareSelectedPassage}
+        onCopyLink={copySelectedPassageLink}
         onClear={() => {
           window.getSelection()?.removeAllRanges()
           setSelectedPassage(null)
@@ -434,11 +441,13 @@ function PassageShareBar({
   passage,
   status,
   onShare,
+  onCopyLink,
   onClear,
 }: {
   passage: string | null
-  status: 'idle' | 'copied'
+  status: 'idle' | 'copied' | 'link-copied'
   onShare: () => void
+  onCopyLink: () => void
   onClear: () => void
 }) {
   if (!passage) return null
@@ -453,6 +462,14 @@ function PassageShareBar({
           className="inline-flex h-9 items-center rounded-full px-3 text-sm font-semibold text-stone-500 hover:bg-stone-900/5 hover:text-stone-900 dark:text-stone-400 dark:hover:bg-white/5 dark:hover:text-stone-100"
         >
           Clear
+        </button>
+        <button
+          type="button"
+          onClick={onCopyLink}
+          className="inline-flex h-9 items-center gap-2 rounded-full px-3 text-sm font-semibold text-stone-600 ring-1 ring-stone-900/10 hover:bg-stone-900/5 dark:text-stone-300 dark:ring-white/10 dark:hover:bg-white/5"
+        >
+          {status === 'link-copied' ? <Check size={16} /> : <Link2 size={16} />}
+          {status === 'link-copied' ? 'Link copied' : 'Copy link'}
         </button>
         <button
           type="button"
