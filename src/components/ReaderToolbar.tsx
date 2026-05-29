@@ -10,6 +10,7 @@ interface Props {
   fontSize: number
   theme: 'light' | 'dark'
   viewMode: 'scroll' | 'page'
+  justified: boolean
   canGoPrev: boolean
   canGoNext: boolean
   onBack: () => void
@@ -17,6 +18,7 @@ interface Props {
   onFontSizeChange: (size: number) => void
   onThemeToggle: () => void
   onViewModeChange: (mode: 'scroll' | 'page') => void
+  onJustifiedChange: (justified: boolean) => void
   onPrevPage: () => void
   onNextPage: () => void
 }
@@ -28,6 +30,7 @@ export function ReaderToolbar({
   fontSize,
   theme,
   viewMode,
+  justified,
   canGoPrev,
   canGoNext,
   onBack,
@@ -35,6 +38,7 @@ export function ReaderToolbar({
   onFontSizeChange,
   onThemeToggle,
   onViewModeChange,
+  onJustifiedChange,
   onPrevPage,
   onNextPage,
 }: Props) {
@@ -97,6 +101,18 @@ export function ReaderToolbar({
         <div className="hidden sm:block">
           <ViewModeToggle mode={viewMode} onChange={onViewModeChange} />
         </div>
+        <button
+          type="button"
+          onClick={() => onJustifiedChange(!justified)}
+          className={`hidden h-10 items-center rounded-full px-3 text-sm font-semibold transition sm:inline-flex ${
+            justified
+              ? 'bg-stone-900 text-[#fff8ea] dark:bg-stone-100 dark:text-stone-950'
+              : 'text-stone-600 hover:bg-stone-200/70 dark:text-stone-300 dark:hover:bg-stone-800'
+          }`}
+          aria-pressed={justified}
+        >
+          Justified
+        </button>
         <div className="hidden sm:block">
           <ThemeToggle theme={theme} onToggle={onThemeToggle} />
         </div>

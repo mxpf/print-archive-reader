@@ -83,15 +83,6 @@ export function LibraryView({
           </aside>
 
           <section>
-            <div className="mb-3 flex items-end justify-between gap-3">
-              <div>
-                <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-stone-500 dark:text-stone-500">Collection</div>
-                <p className="mt-1 text-sm text-stone-600 dark:text-stone-400">
-                  {filteredBooks.length} {filteredBooks.length === 1 ? 'volume' : 'volumes'} shown
-                </p>
-              </div>
-            </div>
-
             {viewMode === 'list' ? (
               <div className="overflow-hidden rounded-xl bg-[#fffaf1]/65 shadow-[0_18px_60px_rgba(69,52,35,0.08)] ring-1 ring-stone-900/6 dark:bg-[#17130f]/78 dark:shadow-none dark:ring-[#342a22]">
                 {filteredBooks.map((book) => (

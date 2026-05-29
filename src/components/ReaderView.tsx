@@ -20,6 +20,7 @@ export function ReaderView({ book, theme, onThemeToggle, onBack, onUpdateBook }:
   const [activeChapterId, setActiveChapterId] = useState(initialChapter)
   const [viewMode, setViewMode] = useState<'scroll' | 'page'>('scroll')
   const [fontSize, setFontSize] = useState(19)
+  const [justified, setJustified] = useState(false)
   const [pageIndex, setPageIndex] = useState(book.lastReadPosition?.pageIndex ?? 0)
   const [scrollRatio, setScrollRatio] = useState(book.lastReadPosition?.scrollRatio ?? 0)
   const [controlsOpen, setControlsOpen] = useState(false)
@@ -177,7 +178,7 @@ export function ReaderView({ book, theme, onThemeToggle, onBack, onUpdateBook }:
     })
 
     return () => window.cancelAnimationFrame(frame)
-  }, [contentBlocks, fallbackPages, fontSize, pageMeasureKey, viewMode])
+  }, [contentBlocks, fallbackPages, fontSize, justified, pageMeasureKey, viewMode])
 
   useEffect(() => {
     if (!controlsOpen) return
@@ -203,6 +204,7 @@ export function ReaderView({ book, theme, onThemeToggle, onBack, onUpdateBook }:
         fontSize={fontSize}
         theme={theme}
         viewMode={viewMode}
+        justified={justified}
         canGoPrev={pageIndex > 0}
         canGoNext={pageIndex < pages.length - 1}
         onBack={onBack}
@@ -210,6 +212,7 @@ export function ReaderView({ book, theme, onThemeToggle, onBack, onUpdateBook }:
         onFontSizeChange={setFontSize}
         onThemeToggle={onThemeToggle}
         onViewModeChange={changeViewMode}
+        onJustifiedChange={setJustified}
         onPrevPage={() => setPage(pageIndex - 1)}
         onNextPage={() => setPage(pageIndex + 1)}
       />
@@ -228,6 +231,7 @@ export function ReaderView({ book, theme, onThemeToggle, onBack, onUpdateBook }:
         chapters={book.chapters}
         activeChapterId={activeChapterId}
         fontSize={fontSize}
+        justified={justified}
         theme={theme}
         viewMode={viewMode}
         canGoPrev={pageIndex > 0}
@@ -238,6 +242,7 @@ export function ReaderView({ book, theme, onThemeToggle, onBack, onUpdateBook }:
           setControlsOpen(false)
         }}
         onFontSizeChange={setFontSize}
+        onJustifiedChange={setJustified}
         onThemeToggle={onThemeToggle}
         onViewModeChange={changeViewMode}
         onPrevPage={() => setPage(pageIndex - 1)}
@@ -248,7 +253,7 @@ export function ReaderView({ book, theme, onThemeToggle, onBack, onUpdateBook }:
         <>
           <article
             className="reader-content mx-auto max-w-[72ch] px-5 pb-[calc(6.5rem+env(safe-area-inset-bottom))] pt-10 leading-[1.78] text-stone-900 dark:text-stone-100 sm:px-8 sm:pb-10"
-            style={{ fontSize }}
+            style={{ fontSize, textAlign: justified ? 'justify' : 'left' }}
             onBlur={() => persist(activeChapterId, pageIndex, scrollRatio)}
             dangerouslySetInnerHTML={{ __html: activeChapter?.contentHtml ?? '' }}
           />
@@ -267,13 +272,14 @@ export function ReaderView({ book, theme, onThemeToggle, onBack, onUpdateBook }:
             <article
               ref={pageArticleRef}
               className="reader-content min-h-0 overflow-hidden rounded-lg border border-stone-200 bg-[#fffaf1] px-6 py-7 leading-[1.72] shadow-sm dark:border-stone-800 dark:bg-stone-900 sm:px-10 sm:py-9"
-              style={{ fontSize }}
+              style={{ fontSize, textAlign: justified ? 'justify' : 'left' }}
               dangerouslySetInnerHTML={{ __html: pages[pageIndex] ?? '' }}
             />
             <div
               ref={measureRef}
               aria-hidden="true"
               className="reader-content pointer-events-none fixed -left-[9999px] top-0 invisible rounded-lg border border-transparent px-6 py-7 leading-[1.72] sm:px-10 sm:py-9"
+              style={{ textAlign: justified ? 'justify' : 'left' }}
             />
             <nav className="mt-4 hidden grid-cols-[1fr_auto_1fr] items-center gap-2 sm:grid">
               <button
@@ -344,6 +350,7 @@ function MobileReaderControls({
   chapters,
   activeChapterId,
   fontSize,
+  justified,
   theme,
   viewMode,
   canGoPrev,
@@ -351,6 +358,7 @@ function MobileReaderControls({
   onClose,
   onChapterChange,
   onFontSizeChange,
+  onJustifiedChange,
   onThemeToggle,
   onViewModeChange,
   onPrevPage,
@@ -360,6 +368,7 @@ function MobileReaderControls({
   chapters: Chapter[]
   activeChapterId: string
   fontSize: number
+  justified: boolean
   theme: 'light' | 'dark'
   viewMode: 'scroll' | 'page'
   canGoPrev: boolean
@@ -367,6 +376,7 @@ function MobileReaderControls({
   onClose: () => void
   onChapterChange: (chapterId: string) => void
   onFontSizeChange: (size: number) => void
+  onJustifiedChange: (justified: boolean) => void
   onThemeToggle: () => void
   onViewModeChange: (mode: 'scroll' | 'page') => void
   onPrevPage: () => void
@@ -439,6 +449,20 @@ function MobileReaderControls({
           </ControlRow>
           <ControlRow label="Reading mode">
             <ViewModeToggle mode={viewMode} onChange={onViewModeChange} />
+          </ControlRow>
+          <ControlRow label="Text align">
+            <button
+              type="button"
+              onClick={() => onJustifiedChange(!justified)}
+              className={`inline-flex h-10 items-center rounded-full px-3 text-sm font-semibold transition ${
+                justified
+                  ? 'bg-stone-900 text-[#fff8ea] dark:bg-stone-100 dark:text-stone-950'
+                  : 'border border-stone-300 text-stone-600 dark:border-stone-700 dark:text-stone-300'
+              }`}
+              aria-pressed={justified}
+            >
+              Justified
+            </button>
           </ControlRow>
           <ControlRow label="Theme">
             <ThemeToggle theme={theme} onToggle={onThemeToggle} />
