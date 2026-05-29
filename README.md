@@ -20,7 +20,7 @@ npm run build
 ## Main Screens
 
 - **Library**: seeded with four realistic sample books, searchable across title, subtitle, author, tags, type, year, and description. Includes editorial grid and compact directory list views.
-- **Reader**: light/dark mode, continuous scroll, page mode, chapter picker, font sizing, progress, rich text, block quotes, and footnotes.
+- **Reader**: dedicated book URLs, light/dark mode, continuous scroll, page mode, chapter picker, font sizing, justified text, progress, rich text, block quotes, footnotes, and shareable highlighted passages.
 - **Import Book**: metadata, phone-friendly capture, page cleanup review, OCR progress, text correction, chapter editing, and save to library.
 - **Source Reference**: imported books retain original scanned pages with page numbers, spread-side metadata, roles, notes, and preserved images for citation and verification.
 
@@ -98,6 +98,10 @@ The UI does not depend on which engine produced the text.
 ## Persistence
 
 Books are stored locally in IndexedDB through `src/services/storage.ts`. Initial sample books are seeded once using a localStorage flag. No backend is required.
+
+## URLs and Passage Sharing
+
+Books use hash routes so GitHub Pages can serve direct links without backend routing. A book URL looks like `#/book/sample-way-of-attention`. Selecting text in the reader reveals a share control that can copy or use the native share sheet for a link like `#/book/{id}?chapter={chapterId}&quote={selectedText}`. Opening that link jumps to the book, switches to the target chapter, and highlights the quoted passage when it can be matched in the stored HTML.
 
 ## GitHub Pages
 

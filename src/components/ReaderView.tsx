@@ -1,4 +1,4 @@
-import { ChevronLeft, ChevronRight, Home, Minus, Plus, SlidersHorizontal, X } from 'lucide-react'
+import { Check, ChevronLeft, ChevronRight, Home, Minus, Plus, Share2, SlidersHorizontal, X } from 'lucide-react'
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import type { ReactNode, TouchEvent } from 'react'
 import { ReaderToolbar } from './ReaderToolbar'
@@ -9,14 +9,15 @@ import { imageSurfaceStyle } from '../utils/media'
 
 interface Props {
   book: Book
+  sharedHighlight?: { chapterId?: string; text: string } | null
   theme: 'light' | 'dark'
   onThemeToggle: () => void
   onBack: () => void
   onUpdateBook: (book: Book) => void
 }
 
-export function ReaderView({ book, theme, onThemeToggle, onBack, onUpdateBook }: Props) {
-  const initialChapter = book.lastReadPosition?.chapterId ?? book.chapters[0]?.id
+export function ReaderView({ book, sharedHighlight, theme, onThemeToggle, onBack, onUpdateBook }: Props) {
+  const initialChapter = sharedHighlight?.chapterId ?? book.lastReadPosition?.chapterId ?? book.chapters[0]?.id
   const [activeChapterId, setActiveChapterId] = useState(initialChapter)
   const [viewMode, setViewMode] = useState<'scroll' | 'page'>('scroll')
   const [fontSize, setFontSize] = useState(19)
@@ -24,18 +25,25 @@ export function ReaderView({ book, theme, onThemeToggle, onBack, onUpdateBook }:
   const [pageIndex, setPageIndex] = useState(book.lastReadPosition?.pageIndex ?? 0)
   const [scrollRatio, setScrollRatio] = useState(book.lastReadPosition?.scrollRatio ?? 0)
   const [controlsOpen, setControlsOpen] = useState(false)
+  const [selectedPassage, setSelectedPassage] = useState<string | null>(null)
+  const [shareStatus, setShareStatus] = useState<'idle' | 'copied'>('idle')
   const [measuredPages, setMeasuredPages] = useState<string[]>([])
   const [pageMeasureKey, setPageMeasureKey] = useState(0)
   const restoreKeyRef = useRef('')
   const scrollTimerRef = useRef<number | null>(null)
   const swipeStartRef = useRef<{ x: number; y: number; time: number } | null>(null)
+  const scrollArticleRef = useRef<HTMLElement | null>(null)
   const pageArticleRef = useRef<HTMLElement | null>(null)
   const measureRef = useRef<HTMLDivElement | null>(null)
 
   const activeChapter = book.chapters.find((chapter) => chapter.id === activeChapterId) ?? book.chapters[0]
   const normalizedContent = useMemo(() => normalizeFootnoteTargets(activeChapter?.contentHtml ?? ''), [activeChapter?.contentHtml])
-  const fallbackPages = useMemo(() => splitIntoReaderPages(normalizedContent), [normalizedContent])
-  const contentBlocks = useMemo(() => htmlToReaderBlocks(normalizedContent), [normalizedContent])
+  const highlightedContent = useMemo(
+    () => highlightQuoteInHtml(normalizedContent, sharedHighlight?.text),
+    [normalizedContent, sharedHighlight?.text],
+  )
+  const fallbackPages = useMemo(() => splitIntoReaderPages(highlightedContent), [highlightedContent])
+  const contentBlocks = useMemo(() => htmlToReaderBlocks(highlightedContent), [highlightedContent])
   const pages = viewMode === 'page' && measuredPages.length > 0 ? measuredPages : fallbackPages
   const progress = viewMode === 'scroll' ? Math.round(scrollRatio * 100) : pages.length > 0 ? Math.round(((pageIndex + 1) / pages.length) * 100) : 0
 
@@ -71,6 +79,45 @@ export function ReaderView({ book, theme, onThemeToggle, onBack, onUpdateBook }:
     setPageIndex(0)
     setScrollRatio(0)
     setControlsOpen(false)
+  }
+
+  const handleReaderSelection = () => {
+    window.setTimeout(() => {
+      const selection = window.getSelection()
+      const text = selection?.toString().replace(/\s+/g, ' ').trim() ?? ''
+      if (!selection?.rangeCount || text.length < 6) {
+        setSelectedPassage(null)
+        setShareStatus('idle')
+        return
+      }
+
+      const range = selection.getRangeAt(0)
+      const container = range.commonAncestorContainer
+      const element = container.nodeType === Node.ELEMENT_NODE ? (container as Element) : container.parentElement
+      if (!element?.closest('.reader-content')) return
+
+      setSelectedPassage(text.slice(0, 900))
+      setShareStatus('idle')
+    }, 0)
+  }
+
+  const shareSelectedPassage = async () => {
+    if (!selectedPassage) return
+    const url = makeHighlightUrl(book.id, activeChapterId, selectedPassage)
+    const text = `${book.title}, ${book.author}\n\n"${selectedPassage}"\n\n${url}`
+
+    if (navigator.share) {
+      try {
+        await navigator.share({ title: book.title, text: `"${selectedPassage}"`, url })
+        setShareStatus('copied')
+        return
+      } catch {
+        // Fall back to clipboard when the native share sheet is dismissed or unavailable.
+      }
+    }
+
+    await navigator.clipboard.writeText(text)
+    setShareStatus('copied')
   }
 
   const handlePageTouchStart = (event: TouchEvent<HTMLElement>) => {
@@ -111,6 +158,28 @@ export function ReaderView({ book, theme, onThemeToggle, onBack, onUpdateBook }:
       setScrollRatio(ratio)
     })
   }, [activeChapterId, book.id, book.lastReadPosition?.chapterId, book.lastReadPosition?.scrollRatio, viewMode])
+
+  useEffect(() => {
+    if (!sharedHighlight?.text) return
+    const frame = window.requestAnimationFrame(() => {
+      if (sharedHighlight.chapterId && book.chapters.some((chapter) => chapter.id === sharedHighlight.chapterId)) {
+        setActiveChapterId(sharedHighlight.chapterId)
+      }
+      setViewMode('scroll')
+      setPageIndex(0)
+      setScrollRatio(0)
+    })
+
+    return () => window.cancelAnimationFrame(frame)
+  }, [book.chapters, sharedHighlight?.chapterId, sharedHighlight?.text])
+
+  useEffect(() => {
+    if (!sharedHighlight?.text || viewMode !== 'scroll') return
+    const frame = window.requestAnimationFrame(() => {
+      document.querySelector('[data-shared-highlight="true"]')?.scrollIntoView({ block: 'center' })
+    })
+    return () => window.cancelAnimationFrame(frame)
+  }, [highlightedContent, sharedHighlight?.text, viewMode])
 
   useEffect(() => {
     if (viewMode !== 'scroll') return
@@ -250,13 +319,27 @@ export function ReaderView({ book, theme, onThemeToggle, onBack, onUpdateBook }:
         onNextPage={() => setPage(pageIndex + 1)}
       />
 
+      <PassageShareBar
+        passage={selectedPassage}
+        status={shareStatus}
+        onShare={shareSelectedPassage}
+        onClear={() => {
+          window.getSelection()?.removeAllRanges()
+          setSelectedPassage(null)
+          setShareStatus('idle')
+        }}
+      />
+
       {viewMode === 'scroll' ? (
         <>
           <article
+            ref={scrollArticleRef}
             className="reader-content mx-auto max-w-[72ch] px-5 pb-[calc(6.5rem+env(safe-area-inset-bottom))] pt-10 leading-[1.78] text-stone-900 dark:text-stone-100 sm:px-8 sm:pb-10"
             style={{ fontSize, textAlign: justified ? 'justify' : 'left' }}
             onBlur={() => persist(activeChapterId, pageIndex, scrollRatio)}
-            dangerouslySetInnerHTML={{ __html: normalizedContent }}
+            onMouseUp={handleReaderSelection}
+            onTouchEnd={handleReaderSelection}
+            dangerouslySetInnerHTML={{ __html: highlightedContent }}
           />
           <SourceReferencePanel pages={book.sourcePages} />
         </>
@@ -274,6 +357,7 @@ export function ReaderView({ book, theme, onThemeToggle, onBack, onUpdateBook }:
               ref={pageArticleRef}
               className="reader-content min-h-0 overflow-hidden rounded-lg border border-stone-200 bg-[#fffaf1] px-6 py-7 leading-[1.72] shadow-sm dark:border-stone-800 dark:bg-stone-900 sm:px-10 sm:py-9"
               style={{ fontSize, textAlign: justified ? 'justify' : 'left' }}
+              onMouseUp={handleReaderSelection}
               dangerouslySetInnerHTML={{ __html: pages[pageIndex] ?? '' }}
             />
             <div
@@ -342,6 +426,43 @@ function MobileFloatingReaderButtons({
       >
         <SlidersHorizontal size={23} />
       </button>
+    </div>
+  )
+}
+
+function PassageShareBar({
+  passage,
+  status,
+  onShare,
+  onClear,
+}: {
+  passage: string | null
+  status: 'idle' | 'copied'
+  onShare: () => void
+  onClear: () => void
+}) {
+  if (!passage) return null
+
+  return (
+    <div className="fixed inset-x-4 bottom-[calc(5.4rem+env(safe-area-inset-bottom))] z-50 mx-auto max-w-xl rounded-2xl bg-[#fbf5ea]/95 p-3 shadow-2xl ring-1 ring-stone-900/10 backdrop-blur dark:bg-[#14100d]/95 dark:ring-stone-700 sm:bottom-5">
+      <p className="line-clamp-2 text-sm leading-5 text-stone-700 dark:text-stone-300">"{passage}"</p>
+      <div className="mt-3 flex items-center justify-end gap-2">
+        <button
+          type="button"
+          onClick={onClear}
+          className="inline-flex h-9 items-center rounded-full px-3 text-sm font-semibold text-stone-500 hover:bg-stone-900/5 hover:text-stone-900 dark:text-stone-400 dark:hover:bg-white/5 dark:hover:text-stone-100"
+        >
+          Clear
+        </button>
+        <button
+          type="button"
+          onClick={onShare}
+          className="inline-flex h-9 items-center gap-2 rounded-full bg-stone-900 px-3 text-sm font-semibold text-[#fff8ea] dark:bg-stone-100 dark:text-stone-950"
+        >
+          {status === 'copied' ? <Check size={16} /> : <Share2 size={16} />}
+          {status === 'copied' ? 'Copied' : 'Share passage'}
+        </button>
+      </div>
     </div>
   )
 }
@@ -536,6 +657,51 @@ function SourceReferencePanel({ pages }: { pages: SourcePage[] }) {
       </div>
     </aside>
   )
+}
+
+function makeHighlightUrl(bookId: string, chapterId: string, quote: string) {
+  const params = new URLSearchParams({ chapter: chapterId, quote })
+  return `${window.location.origin}${window.location.pathname}#/book/${encodeURIComponent(bookId)}?${params.toString()}`
+}
+
+function highlightQuoteInHtml(html: string, quote?: string) {
+  const cleanQuote = quote?.replace(/\s+/g, ' ').trim()
+  if (!html || !cleanQuote || typeof document === 'undefined') return html
+
+  const template = document.createElement('template')
+  template.innerHTML = html
+  const textNodes: Array<{ node: Text; start: number; end: number }> = []
+  let combinedText = ''
+
+  const walker = document.createTreeWalker(template.content, NodeFilter.SHOW_TEXT)
+  let node = walker.nextNode()
+  while (node) {
+    const textNode = node as Text
+    const text = textNode.textContent ?? ''
+    textNodes.push({ node: textNode, start: combinedText.length, end: combinedText.length + text.length })
+    combinedText += text
+    node = walker.nextNode()
+  }
+
+  const startIndex = combinedText.indexOf(cleanQuote)
+  if (startIndex < 0) return html
+
+  const endIndex = startIndex + cleanQuote.length
+  const startPart = textNodes.find((part) => startIndex >= part.start && startIndex <= part.end)
+  const endPart = textNodes.find((part) => endIndex >= part.start && endIndex <= part.end)
+  if (!startPart || !endPart) return html
+
+  const range = document.createRange()
+  range.setStart(startPart.node, startIndex - startPart.start)
+  range.setEnd(endPart.node, endIndex - endPart.start)
+
+  const mark = document.createElement('mark')
+  mark.className = 'shared-highlight'
+  mark.dataset.sharedHighlight = 'true'
+  mark.appendChild(range.extractContents())
+  range.insertNode(mark)
+
+  return template.innerHTML
 }
 
 function normalizeFootnoteTargets(html: string) {

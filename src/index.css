@@ -88,6 +88,17 @@ textarea {
   text-underline-offset: 0.18em;
 }
 
+.shared-highlight {
+  border-radius: 0.18em;
+  background: color-mix(in srgb, #d8aa48 36%, transparent);
+  box-decoration-break: clone;
+  -webkit-box-decoration-break: clone;
+}
+
+.dark .shared-highlight {
+  background: color-mix(in srgb, #f4d27c 34%, transparent);
+}
+
 .reader-content hr,
 .editable-rich-text hr {
   margin: 1.8rem auto;
