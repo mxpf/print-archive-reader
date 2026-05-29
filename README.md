@@ -26,7 +26,7 @@ npm run build
 
 ## Typography
 
-The app uses EB Garamond from Google Fonts across the full interface, including controls, metadata, reader text, footnotes, page markers, and generated archive labels. The import is defined in `src/index.css`.
+The app uses EB Garamond from Google Fonts as the primary reading and title face. Libre Franklin is paired with it for author names, all-caps metadata labels, page markers, footnote labels, and other compact archive annotations. The imports and font variables are defined in `src/index.css`.
 
 ## Data Model
 

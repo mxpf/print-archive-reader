@@ -27,7 +27,7 @@ export function BookCard({ book, variant = 'card', onOpen }: Props) {
         <FileText size={17} className="text-stone-400 transition group-hover:text-stone-700 dark:text-stone-500 dark:group-hover:text-stone-200" />
         <span className="min-w-0">
           <span className="block truncate font-serif text-[15px] font-semibold leading-tight text-stone-950 dark:text-[#f5efe5]">{book.title}</span>
-          <span className="mt-0.5 block truncate text-xs leading-tight text-stone-500 dark:text-stone-400">{book.author}</span>
+          <span className="mt-0.5 block truncate font-sans text-xs leading-tight text-stone-500 dark:text-stone-400">{book.author}</span>
         </span>
         <span className="hidden items-center gap-3 text-xs text-stone-500 dark:text-stone-500 sm:inline-flex">
           <span>{book.bookType}</span>
@@ -74,7 +74,7 @@ export function BookCard({ book, variant = 'card', onOpen }: Props) {
           {book.title}
         </h3>
         {book.subtitle ? <p className="mt-1 line-clamp-1 text-sm text-stone-600 dark:text-stone-400">{book.subtitle}</p> : null}
-        <p className="mt-2 text-sm text-stone-800 dark:text-stone-300">{book.author}</p>
+        <p className="mt-2 font-sans text-sm text-stone-800 dark:text-stone-300">{book.author}</p>
         <p className="mt-3 line-clamp-2 text-sm leading-6 text-stone-600 dark:text-stone-400">{book.description}</p>
         <div className="mt-3 flex flex-wrap gap-1.5">
           {book.tags.slice(0, 3).map((tag) => (

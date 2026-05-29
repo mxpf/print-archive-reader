@@ -36,7 +36,7 @@ export function BookDetail({ book, onBack, onRead }: Props) {
           </div>
           <h1 className="mt-3 text-4xl font-semibold leading-tight text-stone-950 dark:text-white sm:text-5xl">{book.title}</h1>
           {book.subtitle ? <p className="mt-2 text-xl text-stone-600 dark:text-stone-300">{book.subtitle}</p> : null}
-          <p className="mt-4 text-lg text-stone-800 dark:text-stone-200">{book.author}</p>
+          <p className="mt-4 font-sans text-lg text-stone-800 dark:text-stone-200">{book.author}</p>
           <p className="mt-5 max-w-2xl text-base leading-7 text-stone-600 dark:text-stone-300">{book.description}</p>
           <div className="mt-5 flex flex-wrap items-center gap-2">
             <Tags size={16} className="text-stone-500" />
