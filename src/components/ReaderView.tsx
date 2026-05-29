@@ -89,8 +89,8 @@ export function ReaderView({ book, theme, onThemeToggle, onBack, onUpdateBook }:
     <main
       className={
         theme === 'dark'
-          ? 'min-h-screen bg-stone-950 text-stone-50'
-          : 'min-h-screen bg-[#f7f1e7] text-stone-950'
+          ? 'min-h-screen bg-stone-950 text-stone-50 [--reader-toolbar-height:57px] sm:[--reader-toolbar-height:69px]'
+          : 'min-h-screen bg-[#f7f1e7] text-stone-950 [--reader-toolbar-height:57px] sm:[--reader-toolbar-height:69px]'
       }
     >
       <ReaderToolbar
@@ -115,7 +115,7 @@ export function ReaderView({ book, theme, onThemeToggle, onBack, onUpdateBook }:
         onNextPage={() => setPage(pageIndex + 1)}
       />
 
-      <div className="fixed inset-x-0 top-[69px] z-10 h-1 bg-stone-200 dark:bg-stone-800">
+      <div className="fixed inset-x-0 top-[var(--reader-toolbar-height)] z-10 h-1 bg-stone-200 dark:bg-stone-800">
         <div className="h-full bg-stone-900 transition-all dark:bg-stone-200" style={{ width: `${progress}%` }} />
       </div>
 
@@ -131,13 +131,13 @@ export function ReaderView({ book, theme, onThemeToggle, onBack, onUpdateBook }:
         </>
       ) : (
         <>
-          <section className="mx-auto grid h-[calc(100svh-74px)] max-w-5xl grid-rows-[minmax(0,1fr)_auto] px-4 pb-4 pt-5 sm:px-8 sm:pb-5">
+          <section className="mx-auto grid h-[calc(100svh-var(--reader-toolbar-height)-4px)] max-w-5xl grid-rows-[minmax(0,1fr)_auto] px-4 pb-4 pt-4 sm:px-8 sm:pb-5 sm:pt-5">
             <article
               className="reader-content min-h-0 overflow-y-auto rounded-lg border border-stone-200 bg-[#fffaf1] px-6 py-7 leading-[1.72] shadow-sm [scrollbar-gutter:stable] dark:border-stone-800 dark:bg-stone-900 sm:px-10 sm:py-9"
               style={{ fontSize }}
               dangerouslySetInnerHTML={{ __html: pages[pageIndex] ?? '' }}
             />
-            <nav className="mt-3 grid grid-cols-[1fr_auto_1fr] items-center gap-2 sm:mt-4">
+            <nav className="mt-4 hidden grid-cols-[1fr_auto_1fr] items-center gap-2 sm:grid">
               <button
                 type="button"
                 onClick={() => setPage(pageIndex - 1)}
