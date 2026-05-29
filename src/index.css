@@ -1,0 +1,211 @@
+@import "tailwindcss";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+:root {
+  color: #2f2a25;
+  background: #f7f1e7;
+  font-family:
+    Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+html.dark,
+html.dark body {
+  color: #f5f5f4;
+  background: #0c0a09;
+  color-scheme: dark;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  min-height: 100vh;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+
+.reader-content {
+  font-family: Georgia, "Times New Roman", serif;
+}
+
+.reader-content h2,
+.editable-rich-text h2 {
+  margin: 1.8rem 0 1rem;
+  font-size: 1.45em;
+  line-height: 1.2;
+  font-weight: 600;
+}
+
+.reader-content p,
+.editable-rich-text p {
+  margin: 0 0 1.05rem;
+}
+
+.reader-content blockquote,
+.editable-rich-text blockquote {
+  margin: 1.4rem 0;
+  padding-left: 1.25rem;
+  border-left: 3px solid currentColor;
+  font-style: italic;
+  opacity: 0.78;
+}
+
+.reader-content sup,
+.editable-rich-text sup {
+  font-size: 0.68em;
+  line-height: 0;
+}
+
+.reader-content a,
+.editable-rich-text a {
+  color: inherit;
+  text-decoration: underline;
+  text-decoration-thickness: 0.06em;
+  text-underline-offset: 0.18em;
+}
+
+.reader-content hr,
+.editable-rich-text hr {
+  margin: 1.8rem auto;
+  width: 42%;
+  border: 0;
+  border-top: 1px solid currentColor;
+  opacity: 0.24;
+}
+
+.reader-content hr[data-page],
+.editable-rich-text hr[data-page] {
+  position: relative;
+  overflow: visible;
+}
+
+.reader-content hr[data-page]::after,
+.editable-rich-text hr[data-page]::after {
+  content: "Page " attr(data-page);
+  position: absolute;
+  left: 50%;
+  top: -0.65rem;
+  transform: translateX(-50%);
+  background: #f7f1e7;
+  padding: 0 0.55rem;
+  font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.dark .reader-content hr[data-page]::after,
+.dark .editable-rich-text hr[data-page]::after {
+  background: #0c0a09;
+}
+
+.footnotes,
+.page-footnotes,
+.endnotes {
+  margin-top: 2rem;
+  border-top: 1px solid currentColor;
+  padding-top: 1rem;
+  font-size: 0.85em;
+  opacity: 0.8;
+}
+
+.page-footnotes {
+  margin: 1.75rem 0;
+  padding-left: 0;
+}
+
+.page-footnotes::before {
+  content: "Footnotes";
+  display: block;
+  margin-bottom: 0.6rem;
+  font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.page-footnotes ol,
+.endnotes {
+  list-style: decimal;
+  padding-left: 1.35rem;
+}
+
+.footnote-backref {
+  margin-left: 0.35rem;
+  font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+  font-size: 0.72em;
+}
+
+.preserved-figure {
+  margin: 2rem auto;
+  max-width: min(100%, 34rem);
+  text-align: center;
+}
+
+.preserved-cover {
+  max-width: min(100%, 24rem);
+}
+
+.preserved-image-frame,
+.preserved-image-placeholder {
+  width: 100%;
+  border-radius: 0.5rem;
+  box-shadow: 0 18px 45px rgba(0, 0, 0, 0.18);
+  overflow: hidden;
+}
+
+.preserved-image-frame img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.preserved-cover .preserved-image-frame,
+.preserved-cover .preserved-image-placeholder {
+  aspect-ratio: 2 / 3;
+}
+
+.preserved-illustration .preserved-image-frame,
+.preserved-image-placeholder {
+  aspect-ratio: 3 / 4;
+}
+
+.preserved-crop img,
+.preserved-crop.preserved-image-placeholder {
+  width: 200%;
+  max-width: none;
+}
+
+.preserved-crop-left img,
+.preserved-crop-left.preserved-image-placeholder {
+  object-position: left center;
+}
+
+.preserved-crop-right img,
+.preserved-crop-right.preserved-image-placeholder {
+  object-position: right center;
+  transform: translateX(-50%);
+}
+
+.preserved-figure figcaption {
+  margin-top: 0.85rem;
+  font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+  font-size: 0.78em;
+  color: currentColor;
+  opacity: 0.65;
+}

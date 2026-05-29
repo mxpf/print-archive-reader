@@ -1,0 +1,10 @@
+{
+  "name": "Private Print Archive",
+  "short_name": "Print Archive",
+  "description": "A local-first personal print-book digitization and reading prototype.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f7f1e7",
+  "theme_color": "#f7f1e7",
+  "icons": []
+}
