@@ -1,6 +1,6 @@
 # Private Print Archive
 
-A polished mobile-first prototype for digitizing personal print books into a private searchable reading library. It covers the full product loop: create book metadata, capture pages, review cleanup controls, run mocked OCR, correct rich text, save to a local library, and read with a typography-focused mobile/tablet reader.
+A polished mobile-first prototype for digitizing personal print books into a private searchable reading library. It covers the full product loop: create book metadata, capture pages, review cleanup controls, run local browser OCR or mocked OCR, correct rich text, save to a local library, and read with a typography-focused mobile/tablet reader.
 
 ## Run Locally
 
@@ -77,7 +77,10 @@ The capture step attempts to use `navigator.mediaDevices.getUserMedia` with the 
 
 ## OCR
 
-OCR is mocked in `src/services/ocrService.ts`.
+OCR lives in `src/services/ocrService.ts` and currently has two adapters:
+
+- **Local OCR** uses Tesseract.js in the browser with the English language model. It runs client-side and does not require a backend.
+- **Mock OCR** generates realistic page-level HTML for quickly testing the correction and reader flow.
 
 The service returns `OcrPage[]` with:
 
@@ -86,9 +89,12 @@ The service returns `OcrPage[]` with:
 - confidence values
 - status indicators
 
-To replace it with real OCR, keep the same adapter shape and connect one of:
+Before local OCR runs, each text `SourcePage` is prepared on a canvas. Facing-page uploads are cropped to the selected left or right side, cleanup rotation is applied, and brightness/contrast settings are reflected in the image passed to OCR. The original scanned image stays on `sourcePages` as the permanent reference for page numbers, citations, footnote zones, endnotes, and later verification.
 
-- Tesseract.js for fully local browser OCR
+Tesseract.js returns plain text, so this first real adapter converts line groups into paragraph HTML and preserves page markers with `<hr data-page="...">`. Bold, italic, footnote zones, and endnote links still belong in the correction/review step until a richer OCR or layout parser is added.
+
+Future OCR adapters can keep the same shape and connect one of:
+
 - OCRmyPDF for local document pipelines
 - Google Vision or ABBYY for high-accuracy service OCR
 - a private OCR service for batch import
@@ -132,5 +138,6 @@ src/
 - Add a service worker and real app icons for full PWA install behavior.
 - Capture actual camera frames to canvas instead of placeholder pages.
 - Add crop/deskew/contrast image processing.
-- Integrate Tesseract.js or a private OCR adapter.
+- Improve OCR layout detection for columns, running headers, footnotes, page zones, and illustrations.
+- Add language selection and batch quality settings for Tesseract.js or a private OCR adapter.
 - Add export formats such as EPUB, HTML, Markdown, or PDF.
