@@ -1,7 +1,10 @@
-import { ChevronLeft, ChevronRight } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Minus, Plus, X } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import type { ReactNode } from 'react'
 import { ReaderToolbar } from './ReaderToolbar'
-import type { Book, SourcePage } from '../types/book'
+import { ThemeToggle } from './ThemeToggle'
+import { ViewModeToggle } from './ViewModeToggle'
+import type { Book, Chapter, SourcePage } from '../types/book'
 import { imageSurfaceStyle } from '../utils/media'
 
 interface Props {
@@ -19,6 +22,7 @@ export function ReaderView({ book, theme, onThemeToggle, onBack, onUpdateBook }:
   const [fontSize, setFontSize] = useState(19)
   const [pageIndex, setPageIndex] = useState(book.lastReadPosition?.pageIndex ?? 0)
   const [scrollRatio, setScrollRatio] = useState(book.lastReadPosition?.scrollRatio ?? 0)
+  const [controlsOpen, setControlsOpen] = useState(false)
   const restoreKeyRef = useRef('')
   const scrollTimerRef = useRef<number | null>(null)
 
@@ -53,6 +57,13 @@ export function ReaderView({ book, theme, onThemeToggle, onBack, onUpdateBook }:
     persist(activeChapterId, safeNext)
   }
 
+  const changeViewMode = (mode: 'scroll' | 'page') => {
+    setViewMode(mode)
+    setPageIndex(0)
+    setScrollRatio(0)
+    setControlsOpen(false)
+  }
+
   useEffect(() => {
     if (viewMode !== 'scroll') return
     const restoreKey = `${book.id}:${activeChapterId}:scroll`
@@ -85,6 +96,15 @@ export function ReaderView({ book, theme, onThemeToggle, onBack, onUpdateBook }:
     }
   }, [activeChapterId, pageIndex, persist, viewMode])
 
+  useEffect(() => {
+    if (!controlsOpen) return
+    const previousOverflow = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    return () => {
+      document.body.style.overflow = previousOverflow
+    }
+  }, [controlsOpen])
+
   return (
     <main
       className={
@@ -106,18 +126,36 @@ export function ReaderView({ book, theme, onThemeToggle, onBack, onUpdateBook }:
         onChapterChange={changeChapter}
         onFontSizeChange={setFontSize}
         onThemeToggle={onThemeToggle}
-        onViewModeChange={(mode) => {
-          setViewMode(mode)
-          setPageIndex(0)
-          setScrollRatio(0)
-        }}
+        onViewModeChange={changeViewMode}
         onPrevPage={() => setPage(pageIndex - 1)}
         onNextPage={() => setPage(pageIndex + 1)}
+        onOpenControls={() => setControlsOpen(true)}
       />
 
       <div className="fixed inset-x-0 top-[var(--reader-toolbar-height)] z-10 h-1 bg-stone-200 dark:bg-stone-800">
         <div className="h-full bg-stone-900 transition-all dark:bg-stone-200" style={{ width: `${progress}%` }} />
       </div>
+
+      <MobileReaderControls
+        open={controlsOpen}
+        chapters={book.chapters}
+        activeChapterId={activeChapterId}
+        fontSize={fontSize}
+        theme={theme}
+        viewMode={viewMode}
+        canGoPrev={pageIndex > 0}
+        canGoNext={pageIndex < pages.length - 1}
+        onClose={() => setControlsOpen(false)}
+        onChapterChange={(chapterId) => {
+          changeChapter(chapterId)
+          setControlsOpen(false)
+        }}
+        onFontSizeChange={setFontSize}
+        onThemeToggle={onThemeToggle}
+        onViewModeChange={changeViewMode}
+        onPrevPage={() => setPage(pageIndex - 1)}
+        onNextPage={() => setPage(pageIndex + 1)}
+      />
 
       {viewMode === 'scroll' ? (
         <>
@@ -165,6 +203,149 @@ export function ReaderView({ book, theme, onThemeToggle, onBack, onUpdateBook }:
         </>
       )}
     </main>
+  )
+}
+
+function MobileReaderControls({
+  open,
+  chapters,
+  activeChapterId,
+  fontSize,
+  theme,
+  viewMode,
+  canGoPrev,
+  canGoNext,
+  onClose,
+  onChapterChange,
+  onFontSizeChange,
+  onThemeToggle,
+  onViewModeChange,
+  onPrevPage,
+  onNextPage,
+}: {
+  open: boolean
+  chapters: Chapter[]
+  activeChapterId: string
+  fontSize: number
+  theme: 'light' | 'dark'
+  viewMode: 'scroll' | 'page'
+  canGoPrev: boolean
+  canGoNext: boolean
+  onClose: () => void
+  onChapterChange: (chapterId: string) => void
+  onFontSizeChange: (size: number) => void
+  onThemeToggle: () => void
+  onViewModeChange: (mode: 'scroll' | 'page') => void
+  onPrevPage: () => void
+  onNextPage: () => void
+}) {
+  if (!open) return null
+
+  return (
+    <div className="fixed inset-0 z-[60] sm:hidden" role="dialog" aria-modal="true" aria-label="Reading controls">
+      <button
+        type="button"
+        className="absolute inset-0 bg-stone-950/45 backdrop-blur-[2px]"
+        aria-label="Close reading controls"
+        onClick={onClose}
+      />
+      <section className="absolute inset-x-0 bottom-0 max-h-[82svh] overflow-y-auto rounded-t-3xl border border-stone-200 bg-[#fbf5ea] px-5 pb-[calc(1.25rem+env(safe-area-inset-bottom))] pt-4 shadow-2xl dark:border-stone-800 dark:bg-[#14100d]">
+        <div className="mx-auto mb-4 h-1 w-12 rounded-full bg-stone-300 dark:bg-stone-700" />
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <div className="text-xs font-semibold uppercase tracking-[0.18em] text-stone-500">Reader</div>
+            <h2 className="mt-1 font-serif text-xl font-semibold text-stone-950 dark:text-stone-50">Reading controls</h2>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-stone-700 hover:bg-stone-200/70 dark:text-stone-200 dark:hover:bg-stone-800"
+            aria-label="Close reading controls"
+            title="Close reading controls"
+          >
+            <X size={20} />
+          </button>
+        </div>
+
+        <label className="mt-5 block">
+          <span className="text-xs font-semibold uppercase tracking-[0.16em] text-stone-500">Chapter</span>
+          <select
+            value={activeChapterId}
+            onChange={(event) => onChapterChange(event.target.value)}
+            className="mt-2 h-12 w-full rounded-lg border border-stone-300 bg-white px-3 pr-9 text-sm text-stone-950 dark:border-stone-700 dark:bg-stone-950 dark:text-stone-50"
+          >
+            {chapters.map((chapter) => (
+              <option key={chapter.id} value={chapter.id}>
+                {chapter.title}
+              </option>
+            ))}
+          </select>
+        </label>
+
+        <div className="mt-5 grid gap-4">
+          <ControlRow label="Text size">
+            <div className="inline-flex items-center gap-2 rounded-full border border-stone-300 bg-white/70 p-1 dark:border-stone-700 dark:bg-stone-950">
+              <button
+                type="button"
+                onClick={() => onFontSizeChange(Math.max(16, fontSize - 1))}
+                className="inline-flex h-10 w-10 items-center justify-center rounded-full hover:bg-stone-100 dark:hover:bg-stone-800"
+                aria-label="Decrease font size"
+              >
+                <Minus size={16} />
+              </button>
+              <span className="w-8 text-center text-sm text-stone-500">{fontSize}</span>
+              <button
+                type="button"
+                onClick={() => onFontSizeChange(Math.min(26, fontSize + 1))}
+                className="inline-flex h-10 w-10 items-center justify-center rounded-full hover:bg-stone-100 dark:hover:bg-stone-800"
+                aria-label="Increase font size"
+              >
+                <Plus size={16} />
+              </button>
+            </div>
+          </ControlRow>
+          <ControlRow label="Reading mode">
+            <ViewModeToggle mode={viewMode} onChange={onViewModeChange} />
+          </ControlRow>
+          <ControlRow label="Theme">
+            <ThemeToggle theme={theme} onToggle={onThemeToggle} />
+          </ControlRow>
+          {viewMode === 'page' ? (
+            <ControlRow label="Pages">
+              <div className="grid w-full grid-cols-2 gap-2">
+                <button
+                  type="button"
+                  onClick={onPrevPage}
+                  disabled={!canGoPrev}
+                  className="inline-flex h-11 items-center justify-center gap-2 rounded-full border border-stone-300 px-3 text-sm font-medium disabled:opacity-35 dark:border-stone-700"
+                >
+                  <ChevronLeft size={17} />
+                  Previous
+                </button>
+                <button
+                  type="button"
+                  onClick={onNextPage}
+                  disabled={!canGoNext}
+                  className="inline-flex h-11 items-center justify-center gap-2 rounded-full border border-stone-300 px-3 text-sm font-medium disabled:opacity-35 dark:border-stone-700"
+                >
+                  Next
+                  <ChevronRight size={17} />
+                </button>
+              </div>
+            </ControlRow>
+          ) : null}
+        </div>
+      </section>
+    </div>
+  )
+}
+
+function ControlRow({ label, children }: { label: string; children: ReactNode }) {
+  return (
+    <div className="flex items-center justify-between gap-4 border-t border-stone-900/10 pt-4 dark:border-stone-700/70">
+      <span className="text-xs font-semibold uppercase tracking-[0.16em] text-stone-500">{label}</span>
+      {children}
+    </div>
   )
 }
 
