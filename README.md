@@ -1,6 +1,13 @@
-# Private Print Archive
+# Personal Reading Archive
 
-A polished mobile-first prototype for digitizing personal print books into a private searchable reading library. It covers the full product loop: create book metadata, capture pages, review cleanup controls, run local browser OCR or mocked OCR, correct rich text, save to a local library, and read with a typography-focused mobile/tablet reader.
+I wanted to keep part of my pre-DRM book collection with me during the day, so I created a polished mobile-first prototype for digitizing personal print books into a searchable reading library. It covers the full product loop:
+1. create book metadata
+2. capture pages
+3. review cleanup controls
+4. run local browser OCR or mocked OCR
+5. correct rich text
+6. save to a local library
+7. read with a typography-focused mobile/tablet reader
 
 ## Run Locally
 
@@ -132,7 +139,7 @@ src/
   utils/           library filtering and sorting
 ```
 
-## Recommended Next Steps
+## To Do List
 
 - Add DOMPurify before saving edited HTML.
 - Add a service worker and real app icons for full PWA install behavior.
