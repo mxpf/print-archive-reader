@@ -24,6 +24,10 @@ npm run build
 - **Import Book**: metadata, phone-friendly capture, page cleanup review, OCR progress, text correction, chapter editing, and save to library.
 - **Source Reference**: imported books retain original scanned pages with page numbers, spread-side metadata, roles, notes, and preserved images for citation and verification.
 
+## Typography
+
+The app uses EB Garamond from Google Fonts across the full interface, including controls, metadata, reader text, footnotes, page markers, and generated archive labels. The import is defined in `src/index.css`.
+
 ## Data Model
 
 The core type is `Book` in `src/types/book.ts`.
